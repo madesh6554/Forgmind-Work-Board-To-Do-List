@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in &middot; Forgmind Work Board</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body class="auth-body">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="brand-mark">F</div>
+        <div>
+          <h1>Forgmind Work Board</h1>
+          <p class="tagline">Sign in to continue</p>
+        </div>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab active" data-tab="login">Login</button>
+        <button type="button" class="auth-tab" data-tab="register">Create Account</button>
+      </div>
+
+      <form id="loginForm" class="auth-form" autocomplete="off">
+        <label>
+          <span>Username</span>
+          <input type="text" id="loginUser" required maxlength="32" />
+        </label>
+        <label>
+          <span>Password</span>
+          <input type="password" id="loginPass" required maxlength="64" />
+        </label>
+        <div class="auth-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary auth-submit">Sign In</button>
+      </form>
+
+      <form id="registerForm" class="auth-form hidden" autocomplete="off">
+        <label>
+          <span>Choose a Username</span>
+          <input type="text" id="regUser" required minlength="3" maxlength="32" />
+        </label>
+        <label>
+          <span>Choose a Password</span>
+          <input type="password" id="regPass" required minlength="4" maxlength="64" />
+        </label>
+        <label>
+          <span>Confirm Password</span>
+          <input type="password" id="regPass2" required minlength="4" maxlength="64" />
+        </label>
+        <div class="auth-error" id="regError"></div>
+        <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
+      </form>
+
+      <p class="auth-hint">Credentials are stored locally in your browser.</p>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    (function () {
+      if (Auth.isLoggedIn()) {
+        window.location.replace("index.html");
+        return;
+      }
+
+      const tabs = document.querySelectorAll(".auth-tab");
+      const loginForm = document.getElementById("loginForm");
+      const registerForm = document.getElementById("registerForm");
+      const loginError = document.getElementById("loginError");
+      const regError = document.getElementById("regError");
+
+      tabs.forEach((tab) => {
+        tab.addEventListener("click", () => {
+          tabs.forEach((t) => t.classList.remove("active"));
+          tab.classList.add("active");
+          const which = tab.dataset.tab;
+          loginForm.classList.toggle("hidden", which !== "login");
+          registerForm.classList.toggle("hidden", which !== "register");
+          loginError.textContent = "";
+          regError.textContent = "";
+        });
+      });
+
+      if (!Auth.hasAccount()) {
+        document.querySelector('[data-tab="register"]').click();
+      }
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        loginError.textContent = "";
+        const user = document.getElementById("loginUser").value.trim();
+        const pass = document.getElementById("loginPass").value;
+        const ok = await Auth.login(user, pass);
+        if (ok) {
+          window.location.replace("index.html");
+        } else {
+          loginError.textContent = "Invalid username or password.";
+        }
+      });
+
+      registerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        regError.textContent = "";
+        const user = document.getElementById("regUser").value.trim();
+        const pass = document.getElementById("regPass").value;
+        const pass2 = document.getElementById("regPass2").value;
+        if (pass !== pass2) {
+          regError.textContent = "Passwords do not match.";
+          return;
+        }
+        const res = await Auth.register(user, pass);
+        if (res.ok) {
+          window.location.replace("index.html");
+        } else {
+          regError.textContent = res.error || "Could not create account.";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

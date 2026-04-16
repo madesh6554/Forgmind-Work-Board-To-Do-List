@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Forgmind Work Board</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="auth.js"></script>
+<script>if (!Auth.requireLogin()) { /* redirected */ }</script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">F</div>
+      <div>
+        <h1>Forgmind Work Board</h1>
+        <p class="tagline">Plan. Execute. Ship.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="user-badge" id="userBadge"></span>
+      <button id="clearAllBtn" class="btn btn-ghost" title="Clear all tasks">Clear All</button>
+      <button id="logoutBtn" class="btn btn-ghost" title="Sign out">Logout</button>
+    </div>
+  </header>
+
+  <main class="board-wrap">
+    <section class="add-task">
+      <form id="taskForm" autocomplete="off">
+        <input
+          type="text"
+          id="taskInput"
+          placeholder="What do you need to do?"
+          maxlength="200"
+          required
+        />
+        <select id="taskPriority" title="Priority">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+        <select id="taskColumn" title="Start in column">
+          <option value="start" selected>Work Start</option>
+          <option value="progress">In Progress</option>
+          <option value="completed">Completed</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Add Task</button>
+      </form>
+    </section>
+
+    <section class="board">
+      <div class="column" data-column="start">
+        <div class="column-header">
+          <div class="column-title">
+            <span class="dot dot-start"></span>
+            <h2>Work Start</h2>
+          </div>
+          <span class="count" data-count="start">0</span>
+        </div>
+        <div class="task-list" data-droppable="start"></div>
+      </div>
+
+      <div class="column" data-column="progress">
+        <div class="column-header">
+          <div class="column-title">
+            <span class="dot dot-progress"></span>
+            <h2>In Progress</h2>
+          </div>
+          <span class="count" data-count="progress">0</span>
+        </div>
+        <div class="task-list" data-droppable="progress"></div>
+      </div>
+
+      <div class="column" data-column="completed">
+        <div class="column-header">
+          <div class="column-title">
+            <span class="dot dot-completed"></span>
+            <h2>Completed</h2>
+          </div>
+          <span class="count" data-count="completed">0</span>
+        </div>
+        <div class="task-list" data-droppable="completed"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>Drag tasks between columns &middot; Data saved in your browser</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
