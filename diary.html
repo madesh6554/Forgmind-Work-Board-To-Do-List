@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diary &middot; Forgmind</title>
+<link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
+<script src="ai.js"></script>
+</head>
+<body style="visibility: hidden">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-mark">F</div>
+      <div>
+        <h1>Forgmind Workspace</h1>
+        <p class="tagline">Your personal space</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="user-badge" id="userBadge"></span>
+      <button id="logoutBtn" class="btn btn-ghost" title="Sign out">Logout</button>
+    </div>
+  </header>
+
+  <nav class="main-nav">
+    <a href="index.html" class="nav-tab">
+      <span class="nav-icon">&#9776;</span> To-Do List
+    </a>
+    <a href="diary.html" class="nav-tab active">
+      <span class="nav-icon">&#9998;</span> Diary
+    </a>
+  </nav>
+
+  <main class="board-wrap">
+    <section class="diary-compose">
+      <form id="entryForm" autocomplete="off">
+        <div class="diary-compose-row">
+          <input
+            type="text"
+            id="entryTitle"
+            placeholder="Title (optional)"
+            maxlength="120"
+          />
+          <input type="date" id="entryDate" required />
+        </div>
+        <textarea
+          id="entryContent"
+          placeholder="Write about your day... what happened, what you worked on, how you felt."
+          rows="6"
+          maxlength="10000"
+          required
+        ></textarea>
+
+        <div class="ai-toolbar">
+          <button type="button" id="aiSummarizeBtn" class="btn btn-ai" title="AI summary">
+            <span class="ai-icon">&#10024;</span> Summarize
+          </button>
+          <button type="button" id="aiCorrectBtn" class="btn btn-ai" title="AI grammar & spelling fix">
+            <span class="ai-icon">&#10003;</span> Fix Grammar
+          </button>
+          <span class="ai-spacer"></span>
+          <button type="button" id="aiSettingsBtn" class="btn btn-ghost" title="AI settings">
+            <span class="ai-icon">&#9881;</span> AI Settings
+          </button>
+        </div>
+
+        <div id="aiResult" class="ai-result" hidden>
+          <div class="ai-result-head">
+            <span class="ai-result-label" id="aiResultLabel">Result</span>
+            <button type="button" class="icon-btn" id="aiCloseBtn">Close</button>
+          </div>
+          <div class="ai-result-body" id="aiResultBody"></div>
+          <div class="ai-result-actions">
+            <button type="button" class="btn btn-ghost" id="aiCopyBtn">Copy</button>
+            <button type="button" class="btn btn-primary" id="aiApplyBtn" hidden>Apply to Entry</button>
+          </div>
+        </div>
+
+        <div class="diary-compose-actions">
+          <span class="diary-hint" id="editHint" hidden>Editing existing entry</span>
+          <button type="button" id="cancelEditBtn" class="btn btn-ghost" hidden>Cancel</button>
+          <button type="submit" id="saveBtn" class="btn btn-primary">Save Entry</button>
+        </div>
+      </form>
+    </section>
+
+    <div id="settingsModal" class="modal" hidden>
+      <div class="modal-backdrop" data-close="1"></div>
+      <div class="modal-card">
+        <h3>AI Settings</h3>
+        <p class="modal-sub">Powered by Google Gemini (free). Your key is stored only in this browser.</p>
+        <label class="modal-field">
+          <span>Google AI API Key</span>
+          <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off" />
+        </label>
+        <p class="modal-hint">
+          Get a free key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>.
+          Model: <code id="aiModelName">gemini-2.0-flash</code>
+        </p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="clearKeyBtn">Remove Key</button>
+          <button type="button" class="btn btn-ghost" data-close="1">Cancel</button>
+          <button type="button" class="btn btn-primary" id="saveKeyBtn">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <section class="diary-list-wrap">
+      <div class="diary-list-header">
+        <h2>My Diary</h2>
+        <span class="count" id="entryCount">0</span>
+      </div>
+
+      <div class="diary-filters">
+        <div class="filter-group">
+          <label for="filterSource">Type</label>
+          <select id="filterSource">
+            <option value="all">All entries</option>
+            <option value="manual">My writing</option>
+            <option value="task">Task activity</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label for="filterDate">When</label>
+          <select id="filterDate">
+            <option value="all">All time</option>
+            <option value="today">Today</option>
+            <option value="week">Last 7 days</option>
+            <option value="month">Last 30 days</option>
+            <option value="year">This year</option>
+          </select>
+        </div>
+        <div class="filter-group filter-search">
+          <label for="filterSearch">Search</label>
+          <input type="search" id="filterSearch" placeholder="Search text..." />
+        </div>
+        <button type="button" id="clearFiltersBtn" class="btn btn-ghost">Clear</button>
+      </div>
+
+      <div id="diaryList" class="diary-list"></div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <span>Write often &middot; Synced to your account</span>
+  </footer>
+
+  <script src="diary.js"></script>
+</body>
+</html>

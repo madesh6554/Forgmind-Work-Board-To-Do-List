@@ -27,6 +27,51 @@
 
   let tasks = [];
 
+  const COLUMN_LABEL = {
+    start: "Work Start",
+    progress: "In Progress",
+    completed: "Completed",
+  };
+
+  async function logTaskActivity(action, task, extra) {
+    const icons = { added: "+", moved: "->", completed: "✓", edited: "~", deleted: "x" };
+    const verb = {
+      added: "Added task",
+      moved: "Moved task",
+      completed: "Completed task",
+      edited: "Edited task",
+      deleted: "Deleted task",
+    }[action];
+    const title = `[${icons[action]}] ${verb}: ${task.text}`;
+    const lines = [
+      `Task: ${task.text}`,
+      `Priority: ${task.priority}`,
+      `Status: ${COLUMN_LABEL[task.column] || task.column}`,
+    ];
+    if (extra) lines.push(extra);
+    lines.push(`Time: ${new Date().toLocaleString()}`);
+
+    const payload = {
+      user_id: user.id,
+      title,
+      content: lines.join("\n"),
+      entry_date: new Date().toISOString().slice(0, 10),
+      source: "task",
+    };
+    let { error } = await sb.from("diary_entries").insert(payload);
+
+    if (error && /source/i.test(error.message)) {
+      console.warn("source column missing, retrying without it. Run the migration SQL!", error.message);
+      delete payload.source;
+      ({ error } = await sb.from("diary_entries").insert(payload));
+    }
+
+    if (error) {
+      console.error("Diary log failed:", error);
+      alert("Task saved, but diary log failed: " + error.message);
+    }
+  }
+
   function fromRow(row) {
     return {
       id: row.id,
@@ -66,11 +111,14 @@
       alert("Could not add task: " + error.message);
       return;
     }
-    tasks.push(fromRow(data));
+    const newTask = fromRow(data);
+    tasks.push(newTask);
     render();
+    logTaskActivity("added", newTask);
   }
 
   async function deleteTask(id) {
+    const task = tasks.find((t) => t.id === id);
     const { error } = await sb.from("tasks").delete().eq("id", id);
     if (error) {
       alert("Could not delete: " + error.message);
@@ -78,6 +126,7 @@
     }
     tasks = tasks.filter((t) => t.id !== id);
     render();
+    if (task) logTaskActivity("deleted", task);
   }
 
   async function editTask(id) {
@@ -87,6 +136,7 @@
     if (next === null) return;
     const trimmed = next.trim();
     if (!trimmed) return;
+    const previousText = task.text;
     const { error } = await sb.from("tasks").update({ text: trimmed }).eq("id", id);
     if (error) {
       alert("Could not update: " + error.message);
@@ -94,6 +144,7 @@
     }
     task.text = trimmed;
     render();
+    logTaskActivity("edited", task, `Previous text: ${previousText}`);
   }
 
   async function moveTask(id, toColumn) {
@@ -110,7 +161,11 @@
       task.column = previous;
       render();
       alert("Could not move task: " + error.message);
+      return;
     }
+    const action = toColumn === "completed" ? "completed" : "moved";
+    const extra = `From: ${COLUMN_LABEL[previous]} -> To: ${COLUMN_LABEL[toColumn]}`;
+    logTaskActivity(action, task, extra);
   }
 
   async function clearAllTasks() {
