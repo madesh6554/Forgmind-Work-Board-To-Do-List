@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Sign in &middot; Forgmind Work Board</title>
 <link rel="stylesheet" href="styles.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="auth.js"></script>
 </head>
 <body class="auth-body">
   <div class="auth-wrap">
@@ -24,8 +26,8 @@
 
       <form id="loginForm" class="auth-form" autocomplete="off">
         <label>
-          <span>Username</span>
-          <input type="text" id="loginUser" required maxlength="32" />
+          <span>Email</span>
+          <input type="email" id="loginEmail" required maxlength="120" />
         </label>
         <label>
           <span>Password</span>
@@ -37,29 +39,28 @@
 
       <form id="registerForm" class="auth-form hidden" autocomplete="off">
         <label>
-          <span>Choose a Username</span>
-          <input type="text" id="regUser" required minlength="3" maxlength="32" />
+          <span>Email</span>
+          <input type="email" id="regEmail" required maxlength="120" />
         </label>
         <label>
-          <span>Choose a Password</span>
-          <input type="password" id="regPass" required minlength="4" maxlength="64" />
+          <span>Password</span>
+          <input type="password" id="regPass" required minlength="6" maxlength="64" />
         </label>
         <label>
           <span>Confirm Password</span>
-          <input type="password" id="regPass2" required minlength="4" maxlength="64" />
+          <input type="password" id="regPass2" required minlength="6" maxlength="64" />
         </label>
         <div class="auth-error" id="regError"></div>
         <button type="submit" class="btn btn-primary auth-submit">Create Account</button>
       </form>
 
-      <p class="auth-hint">Credentials are stored locally in your browser.</p>
+      <p class="auth-hint">Your account works on any device.</p>
     </div>
   </div>
 
-  <script src="auth.js"></script>
   <script>
-    (function () {
-      if (Auth.isLoggedIn()) {
+    (async function () {
+      if (await Auth.isLoggedIn()) {
         window.location.replace("index.html");
         return;
       }
@@ -82,38 +83,49 @@
         });
       });
 
-      if (!Auth.hasAccount()) {
-        document.querySelector('[data-tab="register"]').click();
-      }
-
       loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         loginError.textContent = "";
-        const user = document.getElementById("loginUser").value.trim();
+        const btn = loginForm.querySelector("button[type=submit]");
+        btn.disabled = true;
+        btn.textContent = "Signing in...";
+        const email = document.getElementById("loginEmail").value.trim();
         const pass = document.getElementById("loginPass").value;
-        const ok = await Auth.login(user, pass);
-        if (ok) {
+        const res = await Auth.login(email, pass);
+        if (res.ok) {
           window.location.replace("index.html");
         } else {
-          loginError.textContent = "Invalid username or password.";
+          loginError.textContent = res.error || "Invalid email or password.";
+          btn.disabled = false;
+          btn.textContent = "Sign In";
         }
       });
 
       registerForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         regError.textContent = "";
-        const user = document.getElementById("regUser").value.trim();
+        const email = document.getElementById("regEmail").value.trim();
         const pass = document.getElementById("regPass").value;
         const pass2 = document.getElementById("regPass2").value;
         if (pass !== pass2) {
           regError.textContent = "Passwords do not match.";
           return;
         }
-        const res = await Auth.register(user, pass);
-        if (res.ok) {
+        const btn = registerForm.querySelector("button[type=submit]");
+        btn.disabled = true;
+        btn.textContent = "Creating...";
+        const res = await Auth.register(email, pass);
+        if (res.ok && !res.needsConfirm) {
           window.location.replace("index.html");
+        } else if (res.ok && res.needsConfirm) {
+          regError.style.color = "#6be675";
+          regError.textContent = "Check your email to confirm, then log in.";
+          btn.disabled = false;
+          btn.textContent = "Create Account";
         } else {
           regError.textContent = res.error || "Could not create account.";
+          btn.disabled = false;
+          btn.textContent = "Create Account";
         }
       });
     })();

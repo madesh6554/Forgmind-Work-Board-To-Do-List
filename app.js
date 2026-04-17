@@ -1,5 +1,8 @@
-(function () {
-  const STORAGE_KEY = "forgmind.workboard.v1";
+(async function () {
+  const logged = await Auth.requireLogin();
+  if (!logged) return;
+
+  document.body.style.visibility = "visible";
 
   const form = document.getElementById("taskForm");
   const input = document.getElementById("taskInput");
@@ -10,37 +13,116 @@
   const userBadge = document.getElementById("userBadge");
   const dropZones = document.querySelectorAll(".task-list");
 
-  if (userBadge && window.Auth) {
-    const name = Auth.currentUser();
-    if (name) userBadge.textContent = "@" + name;
+  const user = await Auth.currentUser();
+  if (userBadge && user) {
+    userBadge.textContent = user.email;
   }
 
   if (logoutBtn) {
-    logoutBtn.addEventListener("click", () => {
-      if (window.Auth) Auth.logout();
+    logoutBtn.addEventListener("click", async () => {
+      await Auth.logout();
       window.location.replace("login.html");
     });
   }
 
-  let tasks = loadTasks();
+  let tasks = [];
 
-  function loadTasks() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
+  function fromRow(row) {
+    return {
+      id: row.id,
+      text: row.text,
+      priority: row.priority,
+      column: row.column_name,
+      createdAt: new Date(row.created_at).getTime(),
+    };
+  }
+
+  async function loadTasks() {
+    const { data, error } = await sb
+      .from("tasks")
+      .select("*")
+      .order("created_at", { ascending: true });
+    if (error) {
+      console.error("Load failed:", error);
+      alert("Could not load tasks: " + error.message);
+      return;
+    }
+    tasks = data.map(fromRow);
+    render();
+  }
+
+  async function addTask(text, priority, column) {
+    const { data, error } = await sb
+      .from("tasks")
+      .insert({
+        user_id: user.id,
+        text: text.trim(),
+        priority,
+        column_name: column,
+      })
+      .select()
+      .single();
+    if (error) {
+      alert("Could not add task: " + error.message);
+      return;
+    }
+    tasks.push(fromRow(data));
+    render();
+  }
+
+  async function deleteTask(id) {
+    const { error } = await sb.from("tasks").delete().eq("id", id);
+    if (error) {
+      alert("Could not delete: " + error.message);
+      return;
+    }
+    tasks = tasks.filter((t) => t.id !== id);
+    render();
+  }
+
+  async function editTask(id) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    const next = prompt("Edit task:", task.text);
+    if (next === null) return;
+    const trimmed = next.trim();
+    if (!trimmed) return;
+    const { error } = await sb.from("tasks").update({ text: trimmed }).eq("id", id);
+    if (error) {
+      alert("Could not update: " + error.message);
+      return;
+    }
+    task.text = trimmed;
+    render();
+  }
+
+  async function moveTask(id, toColumn) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task || task.column === toColumn) return;
+    const previous = task.column;
+    task.column = toColumn;
+    render();
+    const { error } = await sb
+      .from("tasks")
+      .update({ column_name: toColumn })
+      .eq("id", id);
+    if (error) {
+      task.column = previous;
+      render();
+      alert("Could not move task: " + error.message);
     }
   }
 
-  function saveTasks() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
-  }
-
-  function uid() {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  async function clearAllTasks() {
+    if (tasks.length === 0) return;
+    if (!confirm("Delete all your tasks? This cannot be undone.")) return;
+    const { error } = await sb.from("tasks").delete().eq("user_id", user.id);
+    if (error) {
+      alert("Could not clear: " + error.message);
+      return;
+    }
+    tasks = [];
+    render();
   }
 
   function formatDate(ts) {
@@ -132,44 +214,6 @@
     return el;
   }
 
-  function addTask(text, priority, column) {
-    tasks.push({
-      id: uid(),
-      text: text.trim(),
-      priority,
-      column,
-      createdAt: Date.now(),
-    });
-    saveTasks();
-    render();
-  }
-
-  function deleteTask(id) {
-    tasks = tasks.filter((t) => t.id !== id);
-    saveTasks();
-    render();
-  }
-
-  function editTask(id) {
-    const task = tasks.find((t) => t.id === id);
-    if (!task) return;
-    const next = prompt("Edit task:", task.text);
-    if (next === null) return;
-    const trimmed = next.trim();
-    if (!trimmed) return;
-    task.text = trimmed;
-    saveTasks();
-    render();
-  }
-
-  function moveTask(id, toColumn) {
-    const task = tasks.find((t) => t.id === id);
-    if (!task || task.column === toColumn) return;
-    task.column = toColumn;
-    saveTasks();
-    render();
-  }
-
   let draggedId = null;
 
   function onDragStart(e) {
@@ -211,14 +255,7 @@
     input.focus();
   });
 
-  clearAllBtn.addEventListener("click", () => {
-    if (tasks.length === 0) return;
-    if (confirm("Delete all tasks? This cannot be undone.")) {
-      tasks = [];
-      saveTasks();
-      render();
-    }
-  });
+  clearAllBtn.addEventListener("click", clearAllTasks);
 
-  render();
+  await loadTasks();
 })();
