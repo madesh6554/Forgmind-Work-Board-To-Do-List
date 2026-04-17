@@ -1,0 +1,91 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    color: #f2f2f5;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(225, 11, 31, 0.12), transparent 60%),
+      radial-gradient(800px 500px at 100% 110%, rgba(139, 7, 20, 0.18), transparent 60%),
+      linear-gradient(180deg, #0a0a0d, #111116);
+    min-height: 100vh;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    font-family: inherit;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply cursor-pointer font-semibold text-sm px-4 py-2.5 rounded-lg border border-transparent transition-all duration-150 active:translate-y-[1px] disabled:opacity-60 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #e10b1f, #8b0714);
+    @apply text-white shadow-brand-glow;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #ff2a3d, #e10b1f);
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-muted border-line;
+  }
+  .btn-ghost:hover:not(:disabled) {
+    @apply text-white border-brand-red bg-brand-soft;
+  }
+
+  .btn-ai {
+    background: linear-gradient(135deg, rgba(225, 11, 31, 0.15), rgba(139, 7, 20, 0.2));
+    @apply text-white border border-brand-red/40 inline-flex items-center gap-1.5 text-[13px] px-3.5 py-2;
+  }
+  .btn-ai:hover:not(:disabled) {
+    background: linear-gradient(135deg, #e10b1f, #8b0714);
+    @apply border-brand-red shadow-brand-glow;
+  }
+
+  .input {
+    @apply bg-bg-1 border border-line text-white px-3 py-2.5 rounded-lg text-sm outline-none transition;
+  }
+  .input:focus {
+    @apply border-brand-red shadow-[0_0_0_3px_rgba(225,11,31,0.2)];
+  }
+
+  .card {
+    @apply rounded-xl border border-line shadow-brand;
+    background: linear-gradient(180deg, #1a1a22, #111116);
+  }
+
+  .card-accent {
+    @apply card relative overflow-hidden;
+  }
+  .card-accent::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, #e10b1f, transparent);
+  }
+
+  .icon-btn {
+    @apply bg-transparent border border-line text-muted px-2 py-0.5 rounded text-[11px] cursor-pointer transition;
+  }
+  .icon-btn:hover {
+    @apply border-brand-red text-white bg-brand-soft;
+  }
+
+  .chip {
+    @apply bg-bg-3 border border-line px-2.5 py-0.5 rounded-full text-xs text-muted min-w-7 text-center;
+  }
+}
