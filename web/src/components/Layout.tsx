@@ -41,6 +41,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <NavTab to="/board" label="To-Do List" icon="☰" />
         <NavTab to="/diary" label="Diary" icon="✎" />
         <NavTab to="/vault" label="Vault" icon="🔒" />
+        <NavTab to="/expenses" label="Expenses" icon="₹" />
       </nav>
 
       <main className="flex-1 max-w-[1500px] w-full mx-auto px-9 pb-10 pt-6 max-md:px-5">
