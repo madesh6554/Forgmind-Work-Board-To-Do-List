@@ -1,9 +1,21 @@
+import { useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+
+const SIDEBAR_COLLAPSED = 64;
+const SIDEBAR_EXPANDED = 220;
+
+const NAV_ITEMS: Array<{ to: string; label: string; icon: string }> = [
+  { to: "/board", label: "To-Do List", icon: "☰" },
+  { to: "/diary", label: "Diary", icon: "✎" },
+  { to: "/vault", label: "Vault", icon: "🔒" },
+  { to: "/expenses", label: "Expenses", icon: "₹" },
+];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -37,16 +49,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <nav className="flex gap-1.5 px-9 pt-3 border-b border-line max-w-[1500px] w-full mx-auto max-md:px-5 max-md:flex-wrap">
-        <NavTab to="/board" label="To-Do List" icon="☰" />
-        <NavTab to="/diary" label="Diary" icon="✎" />
-        <NavTab to="/vault" label="Vault" icon="🔒" />
-        <NavTab to="/expenses" label="Expenses" icon="₹" />
+      {/* Mobile: horizontal nav visible on small screens */}
+      <nav className="md:hidden flex gap-1.5 px-5 pt-3 pb-2 border-b border-line max-w-[1500px] w-full mx-auto flex-wrap">
+        {NAV_ITEMS.map((it) => (
+          <MobileNavTab key={it.to} to={it.to} label={it.label} icon={it.icon} />
+        ))}
       </nav>
 
-      <main className="flex-1 max-w-[1500px] w-full mx-auto px-9 pb-10 pt-6 max-md:px-5">
-        {children}
-      </main>
+      {/* Desktop layout: sidebar + main */}
+      <div className="flex flex-1 relative">
+        <aside
+          className="relative flex-shrink-0 max-md:hidden"
+          style={{ width: `${SIDEBAR_COLLAPSED}px` }}
+        >
+          <div
+            className="fixed top-[88px] bottom-0 left-0 bg-bg-2 border-r border-line ease-out overflow-hidden z-30 shadow-brand"
+            style={{
+              width: `${expanded ? SIDEBAR_EXPANDED : SIDEBAR_COLLAPSED}px`,
+              transition: "width 200ms ease-out",
+              willChange: "width",
+            }}
+            onMouseEnter={() => setExpanded(true)}
+            onMouseLeave={() => setExpanded(false)}
+          >
+            <nav className="flex flex-col gap-1 p-2 pt-4">
+              {NAV_ITEMS.map((it) => (
+                <SideNavItem
+                  key={it.to}
+                  to={it.to}
+                  label={it.label}
+                  icon={it.icon}
+                  expanded={expanded}
+                />
+              ))}
+            </nav>
+            <div
+              className="absolute bottom-3 left-0 right-0 px-3 text-[10px] text-muted whitespace-nowrap transition-opacity duration-200"
+              style={{ opacity: expanded ? 0.6 : 0 }}
+            >
+              Hover expands this nav
+            </div>
+          </div>
+        </aside>
+
+        <main className="flex-1 max-w-[1500px] w-full mx-auto px-9 pb-10 pt-6 max-md:px-5 max-md:max-w-none">
+          {children}
+        </main>
+      </div>
 
       <footer className="text-center py-4 text-muted text-xs border-t border-line">
         Forgmind Workspace &middot; Synced to your account
@@ -55,39 +104,59 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function NavTab({ to, label, icon }: { to: string; label: string; icon: string }) {
+function SideNavItem({
+  to,
+  label,
+  icon,
+  expanded,
+}: {
+  to: string;
+  label: string;
+  icon: string;
+  expanded: boolean;
+}) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `relative top-[1px] no-underline font-semibold text-sm px-4.5 py-3 rounded-t-[10px] border border-transparent border-b-0 inline-flex items-center gap-2 transition-all ${
+        `flex items-center gap-3 h-11 px-2 rounded-lg transition-colors no-underline ${
           isActive
-            ? "text-white bg-bg-2 border-line"
-            : "text-muted hover:text-white hover:bg-brand-soft"
+            ? "text-white bg-bg-3 border border-line"
+            : "text-muted hover:text-white hover:bg-brand-soft border border-transparent"
         }`
       }
-      style={({ isActive }) =>
-        isActive
-          ? {
-              borderBottomColor: "#1a1a22",
-            }
-          : {}
+      title={label}
+    >
+      <span className="text-xl w-8 flex-shrink-0 text-brand-red text-center leading-none">
+        {icon}
+      </span>
+      <span
+        className="text-sm font-semibold whitespace-nowrap transition-opacity duration-150"
+        style={{
+          opacity: expanded ? 1 : 0,
+          pointerEvents: expanded ? "auto" : "none",
+        }}
+      >
+        {label}
+      </span>
+    </NavLink>
+  );
+}
+
+function MobileNavTab({ to, label, icon }: { to: string; label: string; icon: string }) {
+  return (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `no-underline font-semibold text-xs px-3 py-2 rounded-lg border transition-all inline-flex items-center gap-1.5 ${
+          isActive
+            ? "text-white bg-bg-2 border-brand-red"
+            : "text-muted border-line hover:text-white hover:bg-brand-soft"
+        }`
       }
     >
-      {({ isActive }) => (
-        <>
-          {isActive && (
-            <span
-              className="absolute left-[10%] right-[10%] top-0 h-0.5"
-              style={{
-                background: "linear-gradient(90deg, transparent, #e10b1f, transparent)",
-              }}
-            />
-          )}
-          <span className="text-[15px] text-brand-red">{icon}</span>
-          <span>{label}</span>
-        </>
-      )}
+      <span className="text-brand-red">{icon}</span>
+      <span>{label}</span>
     </NavLink>
   );
 }
