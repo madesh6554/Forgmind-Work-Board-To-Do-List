@@ -37,9 +37,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </header>
 
-      <nav className="flex gap-1.5 px-9 pt-3 border-b border-line max-w-[1500px] w-full mx-auto max-md:px-5">
+      <nav className="flex gap-1.5 px-9 pt-3 border-b border-line max-w-[1500px] w-full mx-auto max-md:px-5 max-md:flex-wrap">
         <NavTab to="/board" label="To-Do List" icon="☰" />
         <NavTab to="/diary" label="Diary" icon="✎" />
+        <NavTab to="/vault" label="Vault" icon="🔒" />
       </nav>
 
       <main className="flex-1 max-w-[1500px] w-full mx-auto px-9 pb-10 pt-6 max-md:px-5">

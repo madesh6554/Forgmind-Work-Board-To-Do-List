@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout";
 import Login from "@/routes/Login";
 import Board from "@/routes/Board";
 import Diary from "@/routes/Diary";
+import Vault from "@/routes/Vault";
 
 function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -35,6 +36,14 @@ export default function App() {
         element={
           <ProtectedLayout>
             <Diary />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/vault"
+        element={
+          <ProtectedLayout>
+            <Vault />
           </ProtectedLayout>
         }
       />

@@ -29,3 +29,39 @@ export const COLUMN_LABEL: Record<ColumnKey, string> = {
   progress: "In Progress",
   completed: "Completed",
 };
+
+export interface VaultKeyRow {
+  user_id: string;
+  salt: string;
+  verifier_iv: string;
+  verifier_ciphertext: string;
+  created_at: string;
+}
+
+export interface VaultEntryRow {
+  id: string;
+  user_id: string;
+  iv: string;
+  ciphertext: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface VaultEntry {
+  id: string;
+  name: string;
+  username: string;
+  password: string;
+  url?: string;
+  notes?: string;
+  updatedAt: string;
+  createdAt: string;
+}
+
+export interface VaultEntryPlaintext {
+  name: string;
+  username: string;
+  password: string;
+  url?: string;
+  notes?: string;
+}
