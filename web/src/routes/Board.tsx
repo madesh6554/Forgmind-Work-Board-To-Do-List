@@ -5,6 +5,32 @@ import { Task, Priority, ColumnKey, COLUMN_LABEL } from "@/lib/types";
 
 const COLUMNS: ColumnKey[] = ["start", "progress", "completed"];
 
+interface DoneEntry {
+  id: string;
+  text: string;
+  priority: Priority;
+  completedAt: string;
+}
+
+function doneKey(userId: string) {
+  return `forgmind:doneList:${userId}`;
+}
+
+function loadDoneList(userId: string): DoneEntry[] {
+  try {
+    const raw = localStorage.getItem(doneKey(userId));
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveDoneList(userId: string, list: DoneEntry[]) {
+  localStorage.setItem(doneKey(userId), JSON.stringify(list));
+}
+
 const DOT_COLOR: Record<ColumnKey, string> = {
   start: "#ff5a6a",
   progress: "#e10b1f",
@@ -26,11 +52,46 @@ export default function Board() {
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState<ColumnKey | null>(null);
   const [loading, setLoading] = useState(true);
+  const [doneList, setDoneList] = useState<DoneEntry[]>([]);
+  const [doneOpen, setDoneOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     loadTasks();
+    setDoneList(loadDoneList(user.id));
   }, [user]);
+
+  function addToDoneList(task: Task) {
+    if (!user) return;
+    setDoneList((prev) => {
+      if (prev.some((d) => d.id === task.id)) return prev;
+      const entry: DoneEntry = {
+        id: task.id,
+        text: task.text,
+        priority: task.priority,
+        completedAt: new Date().toISOString(),
+      };
+      const next = [entry, ...prev];
+      saveDoneList(user.id, next);
+      return next;
+    });
+  }
+
+  function removeDoneEntry(id: string) {
+    if (!user) return;
+    setDoneList((prev) => {
+      const next = prev.filter((d) => d.id !== id);
+      saveDoneList(user.id, next);
+      return next;
+    });
+  }
+
+  function clearDoneList() {
+    if (!user || doneList.length === 0) return;
+    if (!confirm("Clear the entire Done Lists archive?")) return;
+    saveDoneList(user.id, []);
+    setDoneList([]);
+  }
 
   async function loadTasks() {
     setLoading(true);
@@ -108,6 +169,7 @@ export default function Board() {
     setTasks((ts) => [...ts, newTask]);
     setText("");
     logTaskActivity("added", newTask);
+    if (newTask.column_name === "completed") addToDoneList(newTask);
   }
 
   async function deleteTask(task: Task) {
@@ -154,6 +216,7 @@ export default function Board() {
     const action = to === "completed" ? "completed" : "moved";
     const extra = `From: ${COLUMN_LABEL[from]} -> To: ${COLUMN_LABEL[to]}`;
     logTaskActivity(action, { ...task, column_name: to }, extra);
+    if (to === "completed") addToDoneList({ ...task, column_name: to });
   }
 
   async function clearAll() {
@@ -287,6 +350,84 @@ export default function Board() {
             </div>
           );
         })}
+      </section>
+
+      <section className="mt-5">
+        <div className="card-accent overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setDoneOpen((v) => !v)}
+            className="w-full flex justify-between items-center px-[18px] py-4 border-b border-line bg-white/[0.015] hover:bg-white/[0.03] transition-colors"
+          >
+            <div className="flex items-center gap-2.5">
+              <span
+                className="w-2.5 h-2.5 rounded-full"
+                style={{ background: "#6be675", boxShadow: "0 0 10px #6be675" }}
+              />
+              <h2 className="text-[15px] font-semibold tracking-wide uppercase">
+                Done Lists
+              </h2>
+              <span className="chip">{doneList.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              {doneList.length > 0 && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  className="btn btn-ghost text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    clearDoneList();
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      clearDoneList();
+                    }
+                  }}
+                >
+                  Clear
+                </span>
+              )}
+              <span className="text-muted text-sm">{doneOpen ? "▲" : "▼"}</span>
+            </div>
+          </button>
+          {doneOpen && (
+            <div className="p-3.5 flex flex-col gap-2.5">
+              {doneList.length === 0 ? (
+                <div className="text-center text-muted text-xs p-5 border border-dashed border-line rounded-lg">
+                  Nothing archived yet. Finished tasks appear here.
+                </div>
+              ) : (
+                doneList.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="bg-bg-3 border border-line p-3 pl-3.5 pr-3.5 rounded-[10px] flex flex-col gap-2"
+                    style={{ borderLeft: `3px solid ${PRIORITY_COLOR[entry.priority]}` }}
+                  >
+                    <div className="text-sm leading-[1.45] break-words line-through text-muted">
+                      {entry.text}
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-muted">
+                      <div className="flex gap-2 items-center">
+                        <PriorityBadge priority={entry.priority} />
+                        <span>Done {formatDate(entry.completedAt)}</span>
+                      </div>
+                      <button
+                        className="icon-btn"
+                        type="button"
+                        onClick={() => removeDoneEntry(entry.id)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
       </section>
     </div>
   );
