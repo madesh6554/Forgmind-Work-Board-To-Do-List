@@ -54,6 +54,7 @@ export interface VaultEntry {
   password: string;
   url?: string;
   notes?: string;
+  project?: string;
   updatedAt: string;
   createdAt: string;
 }
@@ -64,4 +65,5 @@ export interface VaultEntryPlaintext {
   password: string;
   url?: string;
   notes?: string;
+  project?: string;
 }
