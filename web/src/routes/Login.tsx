@@ -1,8 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/lib/supabase";
 
-type Tab = "login" | "register";
+type Tab = "login" | "register" | "reset";
 
 export default function Login() {
   const { user, loading, login, register } = useAuth();
@@ -53,6 +54,19 @@ export default function Login() {
     }
   };
 
+  const onReset = async (e: FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setInfo("");
+    setBusy(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setBusy(false);
+    if (error) setError(error.message);
+    else setInfo("Password reset link sent! Check your email (including spam).");
+  };
+
   const switchTab = (next: Tab) => {
     setTab(next);
     setError("");
@@ -76,16 +90,47 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-1.5 bg-bg-1 border border-line p-1 rounded-[10px] mb-4">
+          <div className="grid grid-cols-3 gap-1.5 bg-bg-1 border border-line p-1 rounded-[10px] mb-4">
             <TabButton active={tab === "login"} onClick={() => switchTab("login")}>
               Login
             </TabButton>
             <TabButton active={tab === "register"} onClick={() => switchTab("register")}>
-              Create Account
+              Register
+            </TabButton>
+            <TabButton active={tab === "reset"} onClick={() => switchTab("reset")}>
+              Reset
             </TabButton>
           </div>
 
-          {tab === "login" ? (
+          {tab === "reset" ? (
+            <form className="flex flex-col gap-3.5" onSubmit={onReset} autoComplete="off">
+              <p className="text-xs text-muted">
+                Enter your email and we&apos;ll send a reset link.
+              </p>
+              <Field label="Email">
+                <input
+                  type="email"
+                  className="input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  maxLength={120}
+                  autoFocus
+                />
+              </Field>
+              <Feedback error={error} info={info} />
+              <button className="btn btn-primary py-3 mt-1" type="submit" disabled={busy}>
+                {busy ? "Sending..." : "Send Reset Link"}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost text-xs"
+                onClick={() => switchTab("login")}
+              >
+                Back to Login
+              </button>
+            </form>
+          ) : tab === "login" ? (
             <form className="flex flex-col gap-3.5" onSubmit={onLogin} autoComplete="off">
               <Field label="Email">
                 <input
